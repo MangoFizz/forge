@@ -23,6 +23,7 @@ local function setUpEvents()
             if ev.context:mapName() == "forge_legacy" then
                 tags.findAll()
             else
+                player:clearState()
                 tags.clean()
             end
         end
@@ -30,9 +31,15 @@ local function setUpEvents()
 
     Balltze.event.gameInput.subscribe(function (ev)
         if ev.time == "before" then
-            if ev.context.keyCode == 31 then -- "Q" key
-                player.swapBiped()
+            if (not player.isMonitor and ev.context.keyCode == 31) or (player.isMonitor and ev.context.keyCode == 69) then -- "Q" / "Ctrl" key
+                player:swapBiped()
             end
+        end
+    end)
+
+    Balltze.event.tick.subscribe(function (ev)
+        if ev.time == "after" then
+            player:restorePosition()
         end
     end)
 end

@@ -8,71 +8,91 @@ local objectTypes = Engine.tag.objectType
 local tagClasses = Engine.tag.classes
 
 local defaultState = {
-    position = nil
+    savedPosition = nil,
+    isMonitor = false
 }
 
-local playerState = {}
+local playerState = defaultState
 
-function playerState:init()
+---@return MetaEngineBaseObject|MetaEngineBipedObject|nil @player biped object if exists
+function playerState.getBipedObject()
+    local player = getPlayer()
+    if player then
+        return getObject(player.objectHandle, objectTypes.biped)
+    end
+    return nil
+end
+
+function playerState:clearState()
     for k, v in pairs(defaultState) do
         self[k] = v
     end
 end
 
 function playerState:savePosition()
-    local player = Engine.gameState.getPlayer()
-    if player then
-        self.position = {
-            x = player.position.x,
-            y = player.position.y,
-            z = player.position.z
+    local playerBiped = self.getBipedObject()
+    if playerBiped then
+        Logger:debug("Saving player position...")
+        self.savedPosition = {
+            x = playerBiped.position.x,
+            y = playerBiped.position.y,
+            z = playerBiped.position.z
         }
     else
-        self.position = nil
+        self.savedPosition = nil
+    end
+end
+
+function playerState:restorePosition()
+    if self.savedPosition then
+        local playerBiped = self.getBipedObject()
+        if playerBiped then
+            Logger:debug("Restoring player position...")
+            playerBiped.position.x = self.savedPosition.x
+            playerBiped.position.y = self.savedPosition.y
+            playerBiped.position.z = self.savedPosition.z + 0.1
+            self.savedPosition = nil
+        end
     end
 end
 
 ---@param bipedTagHandle? EngineTagHandle|integer
-local function swapBiped(bipedTagHandle) 
-    local player = getPlayer()
-    if not player or player.objectHandle:isNull() then
-        return
-    end
-
-    playerState:savePosition()
-
-    local playerObj = getObject(player.objectHandle, objectTypes.biped)
-    if playerObj then
-        playerObj.vitals.health = 1
-        playerObj.vitals.shield = 1
+function playerState:swapBiped(bipedTagHandle) 
+    local playerBiped = self.getBipedObject()
+    if playerBiped then
+        self:savePosition()
+        playerBiped.vitals.health = 1
+        playerBiped.vitals.shield = 1
         
         local globalsTag = getTag("globals\\globals", tagClasses.globals)
         if globalsTag then
             local globalsData = globalsTag.data
             local mpInfo = globalsData.multiplayerInformation.elements[1]
+            local tags = Forge.tags
+            local monitorBiped = tags.bipeds.monitorNoLight
+            local spartanBiped = tags.bipeds.cyborg
             if not bipedTagHandle then
-                local tags = Forge.tags
-                local monitorBiped = tags.bipeds.monitorNoLight
-                local spartanBiped = tags.bipeds.cyborg
-                if playerObj.tagHandle.value == monitorBiped.handle then
+                if playerBiped.tagHandle.value == monitorBiped.handle then
                     mpInfo.unit.tagHandle.value = spartanBiped.handle
+                    self.isMonitor = false
                 else
                     mpInfo.unit.tagHandle.value = monitorBiped.handle
+                    self.isMonitor = true
                 end
             else
                 local bipedTag = getTag(bipedTagHandle, tagClasses.biped)
                 if bipedTag then
                     mpInfo.unit.tagHandle = bipedTag.handle
+                    self.isMonitor = bipedTag.handle.value == monitorBiped.handle
                 else
                     error("biped tag not found")
                 end
             end
+
+            local player = getPlayer()
             deleteObject(player.objectHandle)
         end
     end
 end
 
-return {
-    state = playerState,
-    swapBiped = swapBiped
-}
+return playerState
