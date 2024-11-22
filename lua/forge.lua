@@ -4,7 +4,9 @@ Logger = {}
 Forge = {}
 
 local tags = require "forge.tags"
-local player = require "forge.player"
+local player = require "forge.editor.player"
+local menu = require "forge.editor.menu"
+local controls = require "forge.editor.controls"
 
 function PluginMetadata()
     return {
@@ -30,9 +32,20 @@ local function setUpEvents()
     end)
 
     Balltze.event.gameInput.subscribe(function (ev)
-        if ev.time == "before" then
-            if (not player.isMonitor and ev.context.keyCode == 31) or (player.isMonitor and ev.context.keyCode == 69) then -- "Q" / "Ctrl" key
-                player:swapBiped()
+        if ev.time == "before" and not player.blockInput then
+            if ev.context.device:label() == "keyboard" then
+                local playerIsMonitor = player:isMonitor()
+                local bindings = controls.keyboardBindings
+                
+                if (not playerIsMonitor and ev.context.keyCode == bindings.enterEditingMode) or 
+                    (playerIsMonitor and ev.context.keyCode == bindings.exitEditingMode) then 
+                    player:swapBiped()
+                    player:setInputTimeout()
+                end
+    
+                if playerIsMonitor and ev.context.keyCode == bindings.showItemsList then
+                    menu.openItemsList()
+                end
             end
         end
     end)
@@ -52,13 +65,19 @@ end
 function PluginLoad()
     Forge.tags = tags
     Forge.player = player
+    Forge.menu = menu
+    Forge.controls = controls
 
     local currentMap = Engine.map.getCurrentMapHeader()
     if currentMap.name == "forge_legacy" then
         tags.findAll()
     end
 
+    controls.loadSettings()
+
     setUpEvents()
+
+    Balltze.features.setUIAspectRatio(16, 9)
 
     Logger:info("Forge loaded!")
 end
