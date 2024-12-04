@@ -19,19 +19,12 @@ function PluginMetadata()
     }
 end
 
-local function setUpEvents() 
-    Balltze.event.mapLoad.subscribe(function (ev)
-        if ev.time == "after" then
-            if ev.context:mapName() == "forge_legacy" then
-                tags.findAll()
-            else
-                player:clearState()
-                tags.clean()
-            end
-        end
-    end)
+local gameInputEventListenerHandle 
+local tickEventListenerHandle
+local widgetAcceptEventListenerHandle
 
-    Balltze.event.gameInput.subscribe(function (ev)
+local function setUpEventListeners() 
+    gameInputEventListenerHandle = Balltze.event.gameInput.subscribe(function (ev)
         if ev.time == "before" and not player.blockInput then
             if ev.context.device:label() == "keyboard" then
                 local playerIsMonitor = player:isMonitor()
@@ -50,11 +43,21 @@ local function setUpEvents()
         end
     end)
 
-    Balltze.event.tick.subscribe(function (ev)
+    tickEventListenerHandle = Balltze.event.tick.subscribe(function (ev)
         if ev.time == "after" then
             player:restorePosition()
         end
     end)
+
+    widgetAcceptEventListenerHandle = Balltze.event.uiWidgetAccept.subscribe(function (ev)
+        Forge.menu.acceptEventHandler(ev)
+    end)
+end
+
+local function tearDownEventListeners()
+    gameInputEventListenerHandle:remove()
+    tickEventListenerHandle:remove()
+    widgetAcceptEventListenerHandle:remove()
 end
 
 function PluginInit()
@@ -75,7 +78,18 @@ function PluginLoad()
 
     controls.loadSettings()
 
-    setUpEvents()
+    Balltze.event.mapLoad.subscribe(function (ev)
+        if ev.time == "after" then
+            if ev.context:mapName() == "forge_legacy" then
+                tags.findAll()
+                setUpEventListeners()
+            else
+                tearDownEventListeners()
+                player:clearState()
+                tags.clean()
+            end
+        end
+    end)
 
     Balltze.features.setUIAspectRatio(16, 9)
 

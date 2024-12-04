@@ -6,6 +6,7 @@ local getTag = Engine.tag.getTag
 local deleteObject = Engine.gameState.deleteObject
 local objectTypes = Engine.tag.objectType
 local tagClasses = Engine.tag.classes
+local setTimer = Balltze.misc.setTimer
 
 local defaultState = {
     savedPosition = nil,
@@ -103,7 +104,7 @@ end
 
 function playerState:setInputTimeout()
     playerState.blockInput = true
-    inputTimeoutTimer = Balltze.misc.setTimer(500, function()
+    inputTimeoutTimer = setTimer(500, function()
         playerState.blockInput = false
         inputTimeoutTimer.stop()
     end)    

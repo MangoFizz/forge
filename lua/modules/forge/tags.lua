@@ -9,7 +9,14 @@ local tagClasses = Engine.tag.classes
 
 local paths = {
     widgets = {
-        "forge\\ui\\editing_mode\\items_list\\items_list_screen"
+        "forge\\ui\\editing_mode\\items_list\\items_list_screen",
+        "forge\\ui\\editing_mode\\items_list\\items_list_select_list",
+        "forge\\ui\\editing_mode\\items_list\\items_list_page_label",
+        "forge\\ui\\editing_mode\\items_list\\nav_next_btn",
+        "forge\\ui\\editing_mode\\items_list\\nav_prev_btn"
+    },
+    collections = {
+        "forge\\forge_objects"
     }
 }
 
@@ -43,7 +50,22 @@ function tags.findAll()
                 path = widgetTag.path,
             }
         else
-            Logger:warn("Widget tag not found: " .. widgetTagPath)
+            Logger:warning("Widget tag not found: " .. widgetTagPath)
+        end
+    end
+
+    tags.collections = {}
+    for _, collectionTagPath in ipairs(paths.collections) do
+        local collectionTag = getTag(collectionTagPath, tagClasses.tagCollection)
+        if collectionTag then
+            local tagName = tags.getTagName(collectionTag)
+            local collectionName = naming.toCamelCase(tagName)
+            tags.collections[collectionName] = {
+                handle = collectionTag.handle.value,
+                path = collectionTag.path,
+            }
+        else
+            Logger:warning("Collection tag not found: " .. collectionTagPath)
         end
     end
 end

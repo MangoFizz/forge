@@ -1,5 +1,8 @@
 -- SPDX-License-Identifier: GPL-3.0-only
 
+local getPluginPath = Balltze.filesystem.getPluginPath
+local openConfigFile = Balltze.config.open
+
 local controls = {}
 
 controls.keyboardKeys = {
@@ -16,8 +19,8 @@ controls.defaultBindings = {
 }
 
 function controls.loadSettings() 
-    local configFilePath = Balltze.filesystem.getPluginPath() .. "\\controls.json"
-    local config = Balltze.config.open(configFilePath)
+    local configFilePath = getPluginPath() .. "\\controls.json"
+    local config = openConfigFile(configFilePath)
     controls.keyboardBindings = {}
     for key, _ in pairs(controls.defaultBindings.keyboard) do
         local value = config:getString("keyboard." .. key)
