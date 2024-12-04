@@ -2,7 +2,6 @@
 
 local getTag = Engine.tag.getTag
 local tagClasses = Engine.tag.classes
-local inspect = require "inspect"
 local naming = require "naming"
 
 local memory = require "memory"
@@ -22,7 +21,6 @@ local function populateItemsList()
     end
     
     itemsList = {}
-    Logger:debug("Items tag collection: {}", inspect(Forge.tags))
     local itemsTagCollection = Forge.tags.collections.forgeObjects
     local tag = getTag(itemsTagCollection.handle, tagClasses.tagCollection)
     if not tag then
