@@ -1,0 +1,12 @@
+{
+    "name": "Forge",
+    "description": "A rewrite of Forge CE as a Balltze plugin.",
+    "author": "MangoFizz, Sledmine",
+    "plugin_main": "forge.lua",
+    "version": "1.0.0",
+    "target_api": "2.0.0-beta.1",
+    "maps": [
+        "forge_legacy_test"
+    ],
+    "reloadable": true
+}
