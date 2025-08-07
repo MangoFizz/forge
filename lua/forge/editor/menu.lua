@@ -7,6 +7,11 @@ local forgeTags = require "forge.tags"
 local getTagData = Engine.tag.getTagData
 local getTagEntry = Engine.tag.getTagEntry
 local launchWidget = Engine.uiWidget.launchWidget
+local findWidgets = Engine.uiWidget.findWidgets
+local focusWidget = Engine.uiWidget.focusWidget
+local unfocusWidget = Engine.uiWidget.unfocusWidget
+local enableWidget = Engine.uiWidget.enableWidget
+local disableWidget = Engine.uiWidget.disableWidget
 
 local menu = {}
 local currentMenuState = {
@@ -70,10 +75,22 @@ local function updateItemsSelectListWidget(pageIndex)
             return
         end
 
+        local btnWidget = findWidgets(childWidget.widgetTag.tagHandle, nil, true)[1]
         local childWidgetLabel = unicodeStringList.strings[stringIndex + 1].string
         local itemIndex = (pageIndex - 1) * itemsListElemsPerPage + i
         if itemsList[itemIndex] then
             memory.writeUnicodeString(childWidgetLabel.pointer, itemsList[itemIndex].name, itemsListStringLen)
+            if btnWidget then
+                enableWidget(btnWidget)
+            end
+        else
+            memory.writeUnicodeString(childWidgetLabel.pointer, " ", 1)
+            if btnWidget then
+                disableWidget(btnWidget)
+            end
+            if btnWidget.parent.focusedChild == btnWidget then
+                focusWidget(btnWidget.parent.child)
+            end
         end
     end
 end
@@ -104,6 +121,26 @@ local function updateItemsPageLabel(pageIndex, totalPages)
     memory.writeUnicodeString(pageLabelWidgetLabel.pointer, pageIndex .. "/" .. totalPages, itemsListStringLen)
 end
 
+local function updateButtonBar(pageIndex, totalPages)
+    local prevButtonWidget = findWidgets(forgeTags.widgets.navPrevBtn.handle, nil, true)[1]
+    if prevButtonWidget then
+        if pageIndex == 1 then
+            disableWidget(prevButtonWidget)
+        else
+            enableWidget(prevButtonWidget)
+        end
+    end
+
+    local nextButtonWidget = findWidgets(forgeTags.widgets.navNextBtn.handle, nil, true)[1]
+    if nextButtonWidget then
+        if pageIndex == totalPages then
+            disableWidget(nextButtonWidget)
+        else
+            enableWidget(nextButtonWidget)
+        end
+    end
+end
+
 local function itemsListSetPage(pageIndex) 
     local totalPages = math.ceil(#itemsList / itemsListElemsPerPage)
 
@@ -120,7 +157,8 @@ local function itemsListSetPage(pageIndex)
     
     updateItemsSelectListWidget(pageIndex)
     updateItemsPageLabel(pageIndex, totalPages)
-    
+    updateButtonBar(pageIndex, totalPages)
+
     currentMenuState.currentPage = pageIndex
 end
 
@@ -132,18 +170,45 @@ function menu.openItemsList()
             widgetDefinition = itemsListScreen,
             currentPage = 1
         }
+        
+        local previousPage = function(widget)
+            itemsListSetPage(currentMenuState.currentPage - 1)
+        end
+        
+        local nextPage = function(widget)
+            itemsListSetPage(currentMenuState.currentPage + 1)
+        end
+        
+        local initialize = function(widget)
+            populateItemsList()
+            itemsListSetPage(1)
+        end
+
         currentMenuState.listeners = {
-            onAccept = {
-                [widgets.navNextBtn.handle] = function()
-                    itemsListSetPage(currentMenuState.currentPage + 1)
-                end,
-                [widgets.navPrevBtn.handle] = function()
-                    itemsListSetPage(currentMenuState.currentPage - 1)
-                end
+            ["a_button"] = {
+                [widgets.navNextBtn.handle] = nextPage,
+                [widgets.navPrevBtn.handle] = previousPage
+            },
+            ["dpad_left"] = {
+                [widgets.itemsListItem1.handle] = previousPage,
+                [widgets.itemsListItem2.handle] = previousPage,
+                [widgets.itemsListItem3.handle] = previousPage,
+                [widgets.itemsListItem4.handle] = previousPage,
+                [widgets.itemsListItem5.handle] = previousPage,
+                [widgets.itemsListItem6.handle] = previousPage
+            },
+            ["dpad_right"] = {
+                [widgets.itemsListItem1.handle] = nextPage,
+                [widgets.itemsListItem2.handle] = nextPage,
+                [widgets.itemsListItem3.handle] = nextPage,
+                [widgets.itemsListItem4.handle] = nextPage,
+                [widgets.itemsListItem5.handle] = nextPage,
+                [widgets.itemsListItem6.handle] = nextPage
+            },
+            ["created"] = {
+                [widgets.itemsListScreen.handle] = initialize
             }
         }
-        populateItemsList()
-        itemsListSetPage(1)
         launchWidget(itemsListScreen)
     end
 end
@@ -152,14 +217,15 @@ end
 local function onWidgetEventDispatch(event)
     local widget = event:getWidget()
     local eventHandler = event:getEventHandlerReference()
-    if eventHandler.eventType == "a_button" then
-        local listeners = currentMenuState.listeners.onAccept
-        if listeners then
-            local widgetHandle = widget.definitionTagHandle.value
-            local listener = listeners[widgetHandle]
-            if listener then
-                listener()
-            end
+    local widgetHandle = widget.definitionTagHandle.value
+
+    Logger.debug("Widget event dispatch: {} for widget {}", eventHandler.eventType, widget.name)
+
+    local eventListeners = currentMenuState.listeners[eventHandler.eventType]
+    if eventListeners then
+        local listener = eventListeners[widgetHandle]
+        if listener then
+            listener(widget)
         end
     end
 end

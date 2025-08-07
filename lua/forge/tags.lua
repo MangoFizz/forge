@@ -12,8 +12,15 @@ local paths = {
         "forge\\ui\\editing_mode\\items_list\\items_list_screen",
         "forge\\ui\\editing_mode\\items_list\\items_list_select_list",
         "forge\\ui\\editing_mode\\items_list\\items_list_page_label",
+        "forge\\ui\\editing_mode\\items_list\\nav_button_bar",
         "forge\\ui\\editing_mode\\items_list\\nav_next_btn",
-        "forge\\ui\\editing_mode\\items_list\\nav_prev_btn"
+        "forge\\ui\\editing_mode\\items_list\\nav_prev_btn",
+        "forge\\ui\\editing_mode\\items_list\\items_list_item_1",
+        "forge\\ui\\editing_mode\\items_list\\items_list_item_2",
+        "forge\\ui\\editing_mode\\items_list\\items_list_item_3",
+        "forge\\ui\\editing_mode\\items_list\\items_list_item_4",
+        "forge\\ui\\editing_mode\\items_list\\items_list_item_5",
+        "forge\\ui\\editing_mode\\items_list\\items_list_item_6"
     },
     collections = {
         "forge\\forge_objects"
